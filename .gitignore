@@ -9,7 +9,7 @@
 !*.sh
 !makefile
 !*.gitignore
-
+!*.py
 
 # ...even if they are in subdirectories
 !*/
