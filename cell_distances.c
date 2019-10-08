@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
   int offset = 0;
   while( fgets(line, sizeof(line), inp_fp) != NULL )
     {// read 3 numbers from line:
-      for( size_t ix = 0; ix < 3; ++ix ) // empty increment
+      for( size_t ix = 0; ix < 3; ++ix )
         {
           number[0] = line[8 * ix];
           number[1] = line[8 * ix + 1];
