@@ -1,8 +1,17 @@
 #include <stdio.h> // printing to screan
 #include <string.h>
 #include <stdlib.h> // memory allocation
+#include <math.h>
 
 int n_threads;
+
+int computeDistance(const int* p1, const int* p2)
+{
+  float distance=0.;
+  distance = sqrtf( (*p2 - *p1)*(*p2 - *p1) + (*(p2+1)-*(p1+1))*(*(p2+1)-*(p1+1)) + (*(p2+2)-*(p1+2))*(*(p2+2)-*(p1+2)) );
+  distance = round(distance*0.1);
+  return (int) (distance);
+}
 
 int main(int argc, char *argv[])
 {
@@ -49,13 +58,29 @@ int main(int argc, char *argv[])
       offset++;
     }
   
-  for (size_t ix = 0; ix < 3*n_points; ix += 3){
+  /*  for (size_t ix = 0; ix < 3*n_points; ix += 3){
     printf("%d %d %d\n", coords[ix], coords[ix + 1], coords[ix + 2]);
-  }
+    }*/
 
   fclose( inp_fp );
 
+  //compute the distances
+  int* freqArray = (int*) calloc(3646, sizeof(int));
+  for ( size_t ix = 0; ix < n_points; ++ix ) {
+    for ( size_t jx = ix+1; jx < n_points; ++jx) {
+      int dist = computeDistance( &coords[3*ix], &coords[3*jx]);
+      ++freqArray[dist-1];
+    }
+  }
+
+  //print the results
+  for ( size_t ix = 0; ix < 3646; ++ix ) {
+    if ( freqArray[ix] ) {
+      printf("%05.2f %d \n", (float)(ix+1)/100, freqArray[ix]);
+    }
+  }
   free(coords);
+  free(freqArray);
 
   return(0);
 }

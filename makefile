@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS = -O0 -Wall # -march=native
-LIBS = 
+LIBS = -lm
 # Directory to keep object files:
 ODIR = obj
 IDIR = include
