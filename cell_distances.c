@@ -72,12 +72,8 @@ int main(int argc, char *argv[])
     default(none) private(ix, jx, dist) shared(coords, n_points) reduction(+:freqArray[:MAX_DISTS])
   for ( ix = 0; ix < 3*n_points; ix += 3 ) {
     for ( jx = ix+3; jx < 3*n_points; jx += 3) {
-      if (jx >= ix + 3) {
-        {
-          dist = computeDistance( &coords[ix], &coords[jx]);
-        }
-        ++freqArray[dist];
-      }
+      dist = computeDistance( &coords[ix], &coords[jx]);
+      ++freqArray[dist];
     }
   }
 
