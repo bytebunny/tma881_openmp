@@ -1,6 +1,6 @@
 CC=gcc
-CFLAGS = -O0 -Wall # -march=native
-LIBS = -lm
+CFLAGS = -O3 -Wall -fopenmp -march=native
+LIBS = -lm -lgomp
 # Directory to keep object files:
 ODIR = obj
 IDIR = include

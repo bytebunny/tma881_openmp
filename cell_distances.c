@@ -1,16 +1,19 @@
 #include <stdio.h> // printing to screan
 #include <string.h>
 #include <stdlib.h> // memory allocation
-#include <math.h>
+#include <math.h> // sqrtf().
+#include <omp.h>
 
 int n_threads;
+const size_t MAX_DISTS = 3465; // max number of unique distances on interval [-10; 10] with 2 decimals precision.
 
 int computeDistance(const int* p1, const int* p2)
 {
-  float distance=0.;
-  distance = sqrtf( (*p2 - *p1)*(*p2 - *p1) + (*(p2+1)-*(p1+1))*(*(p2+1)-*(p1+1)) + (*(p2+2)-*(p1+2))*(*(p2+2)-*(p1+2)) );
-  distance = round(distance*0.1);
-  return (int) (distance);
+  float distance=sqrtf( (*p2 - *p1)*(*p2 - *p1) + 
+                        (*(p2+1)-*(p1+1)) * (*(p2+1)-*(p1+1)) + 
+                        (*(p2+2)-*(p1+2)) * (*(p2+2)-*(p1+2)) );
+  // Divide distance by 10 to keep 5-digit precision.
+  return (int) (distance/10 + 0.5); // round(distance*0.1) is too expensive.
 }
 
 int main(int argc, char *argv[])
@@ -20,6 +23,7 @@ int main(int argc, char *argv[])
   if ( argc == 2 ) {
     ptr = strchr( argv[1], 't'); // starts with 1 because 0 is the program name.
     n_threads = strtol(++ptr, NULL, 10);
+    omp_set_num_threads( n_threads ); // overrides previous value
   }
   else {
     printf("Missing arguments! Correct syntax is: cell_distances -t#numberOfThreads# \n");
@@ -27,7 +31,7 @@ int main(int argc, char *argv[])
   }
 
   /////////////////////////// Read input data from file ////////////////////////
-  FILE *inp_fp = fopen("cells.txt", "r");
+  FILE *inp_fp = fopen("cells", "r");
   if( inp_fp == NULL ) {
     perror("Error opening file");
     return(-1);
@@ -57,30 +61,35 @@ int main(int argc, char *argv[])
         }
       offset++;
     }
-  
-  /*  for (size_t ix = 0; ix < 3*n_points; ix += 3){
-    printf("%d %d %d\n", coords[ix], coords[ix + 1], coords[ix + 2]);
-    }*/
 
   fclose( inp_fp );
 
-  //compute the distances
-  int* freqArray = (int*) calloc(3646, sizeof(int));
-  for ( size_t ix = 0; ix < n_points; ++ix ) {
-    for ( size_t jx = ix+1; jx < n_points; ++jx) {
-      int dist = computeDistance( &coords[3*ix], &coords[3*jx]);
-      ++freqArray[dist-1];
+  ////////////////////////////// Compute the distances /////////////////////////
+  int* freqArray = (int*) calloc( MAX_DISTS, sizeof(int) );
+  size_t ix, jx;
+  int dist;
+  #pragma omp parallel for  \
+    default(none) private(ix, jx, dist) shared(coords, n_points) reduction(+:freqArray[:MAX_DISTS])
+  for ( ix = 0; ix < 3*n_points; ix += 3 ) {
+    for ( jx = ix+3; jx < 3*n_points; jx += 3) {
+      if (jx >= ix + 3) {
+        {
+          dist = computeDistance( &coords[ix], &coords[jx]);
+        }
+        ++freqArray[dist];
+      }
     }
   }
 
   //print the results
-  for ( size_t ix = 0; ix < 3646; ++ix ) {
-    if ( freqArray[ix] ) {
-      printf("%05.2f %d \n", (float)(ix+1)/100, freqArray[ix]);
-    }
+  for ( size_t ix = 0; ix < MAX_DISTS; ++ix ) {
+//    if ( freqArray[ix] ) {
+      printf("%05.2f %d \n", (float)(ix)/100, freqArray[ix]);
+//    }
   }
-  free(coords);
+
   free(freqArray);
+  free(coords);
 
   return(0);
 }
