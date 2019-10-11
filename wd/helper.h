@@ -11,7 +11,7 @@
 #define _H_NEWTON
 typedef struct
 {
-  double** pnts;
+  double* pnts;
   size_t len;
 } cell;
 
