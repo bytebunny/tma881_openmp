@@ -79,7 +79,7 @@ main(int argc, char* argv[])
         fseek(fp, (ixb + ixc) * 24 * sizeof(char), SEEK_SET);
         if (fread(par_line, 1, 24, fp) == 24) {
           printf("\033[0;32m");
-          printf("reading line: %ld\n", ixb + ixc);
+          printf("reading line: %ld, on thd: %d\n", ixb + ixc, omp_get_thread_num());
           printf("\033[0m");
           double end_pnt[3];
           for (size_t jx = 0; jx < 3; jx++) {
