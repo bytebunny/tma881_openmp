@@ -10,13 +10,14 @@ main(int argc, char* argv[])
     n_threads = strtol(++ptr, NULL, 10);
   }
   omp_set_num_threads(n_threads);
+  char filnam[]="cell_50";
   FILE* fp;
-  fp = fopen("cell", "r");
+  fp = fopen(filnam, "r");
   fseek(fp, 0L, SEEK_END);
   long res = ftell(fp);
-  fseek(fp, 0L, SEEK_SET);
+  fclose(fp);
   size_t total_lines = res / 24;
-  size_t max_load_lines = 3;
+  size_t max_load_lines = 10;
   // size_t slice_num = total_lines / max_load_lines; // now i have 5 slices
   // printf("lines %ld\n",total_lines);
 
@@ -71,7 +72,7 @@ main(int argc, char* argv[])
       line_offset = now_read + iblk * max_load_lines;
       if (total_lines - line_offset < max_load_lines) {
         curr_max_load_lines = total_lines - line_offset;
-        printf("remaining line: %ld\n", curr_max_load_lines);
+        // printf("remaining line: %ld\n", curr_max_load_lines);
       } else {
         curr_max_load_lines = max_load_lines;
       }
@@ -83,7 +84,7 @@ main(int argc, char* argv[])
           // printf("task load ender start, thds: %d\n", omp_get_thread_num());
           char par_line[24];
           size_t read_line_num = line_offset + ixc;
-          FILE* fl = fopen("cell", "r");
+          FILE* fl = fopen(filnam, "r");
           fseek(fl, (read_line_num)*24 * sizeof(char), SEEK_SET);
           if (fread(par_line, 1, 24, fl) == 24) {
             printf("\033[0;32m");
@@ -135,7 +136,7 @@ main(int argc, char* argv[])
     printf("\n");
   } // end of ix loop
   // load target
-  fclose(fp);
+  //fclose(fp);
 
   for (size_t ixb = 0; ixb < 3465; ixb++) {
     if (counting[ixb] > 0) {
