@@ -52,7 +52,9 @@ main(int argc, char* argv[])
     printf("\033[0;35m");
     printf("start line: %ld\n", current_pnt - 1);
     printf("\033[0m");
-
+    printf("\033[0;36m");
+    printf("------------\n");
+    printf("\033[0m");
     // printf("<<task load starter end, thds: %d\n\n", omp_get_thread_num());
     // compute how many blocks need
     size_t blks_need;
@@ -111,6 +113,9 @@ main(int argc, char* argv[])
         //        printf("<<task load ender end, thds: %d\n",
         //        omp_get_thread_num());
       }
+      printf("\033[0;36m");
+      printf("------------\n");
+      printf("\033[0m");
       // done_end_blk++;
     }
     printf("\n");
