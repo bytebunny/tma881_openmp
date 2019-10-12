@@ -52,15 +52,16 @@ main(int argc, char* argv[])
     printf("\033[0m");
 
     // printf("<<task load starter end, thds: %d\n\n", omp_get_thread_num());
-    // compute how many blocks need
     size_t now_read = ix + 1;
     size_t blks_need;
     size_t left_lines = total_lines - now_read;
+    // compute how many blocks need
     if (left_lines % max_load_lines) {
       blks_need = left_lines / max_load_lines + 1;
     } else {
       blks_need = left_lines / max_load_lines;
     }
+    // compute how many lines need to load inside a block
     size_t blk_list[blks_need], remain_left_lines = left_lines;
     for (size_t ix = 0; ix < blks_need; ix++) {
       if (remain_left_lines >= max_load_lines) {
