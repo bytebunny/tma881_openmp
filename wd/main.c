@@ -21,9 +21,9 @@ main(int argc, char* argv[])
   // printf("lines %ld\n",total_lines);
 
   double header_pnt[3];
-  double end_pnt[3];
+
   size_t current_pnt = 0;
-  size_t done_end_blk;
+  // size_t done_end_blk;
 
   //[x] [] [] [] []
   for (size_t ix = 0; ix < total_lines - 1; ix++) {
@@ -46,10 +46,12 @@ main(int argc, char* argv[])
         // printf("%s\n", nums);
       }
       current_pnt = ix + 1;
-      done_end_blk = 0;
+      // done_end_blk = 0;
     }
 
+    printf("\033[0;35m");
     printf("start line: %ld\n", current_pnt - 1);
+    printf("\033[0m");
 
     // printf("<<task load starter end, thds: %d\n\n", omp_get_thread_num());
     // compute how many blocks need
@@ -65,15 +67,19 @@ main(int argc, char* argv[])
     // #pragma omp single
     // #pragma omp taskloop grainsize(2)
     for (size_t iblk = 0; iblk < blks_need; iblk++) {
-      printf(">>>>>>\n");
       size_t ixb = current_pnt + iblk * max_load_lines;
-#pragma omp parallel for firstprivate(ixb) private(end_pnt) shared(header_pnt) reduction(+ : counting[:3465])
+#pragma omp parallel default(none) firstprivate(ixb)                           \
+  shared(max_load_lines, header_pnt, fp, counting)
+#pragma omp for reduction(+ : counting[:3465])
       for (size_t ixc = 0; ixc < max_load_lines; ixc++) {
         // printf("task load ender start, thds: %d\n", omp_get_thread_num());
         char par_line[24];
         fseek(fp, (ixb + ixc) * 24 * sizeof(char), SEEK_SET);
         if (fread(par_line, 1, 24, fp) == 24) {
-          printf("current line: %ld\n", ixb + ixc);
+          printf("\033[0;32m");
+          printf("reading line: %ld\n", ixb + ixc);
+          printf("\033[0m");
+          double end_pnt[3];
           for (size_t jx = 0; jx < 3; jx++) {
             char nums[7];
             nums[0] = par_line[8 * jx + 0];
@@ -97,7 +103,7 @@ main(int argc, char* argv[])
 
           size_t total_len_rnd = (size_t)(sqrt(total_len_2) * 100.0 + 0.5);
           counting[total_len_rnd] += 1;
-          printf("counting: %ld\n", counting[total_len_rnd]);
+          // printf("counting: %ld\n", counting[total_len_rnd]);
         }
         //#pragma omp criticle
         //        printf("done_end_blk: %ld\n", done_end_blk);
@@ -105,9 +111,9 @@ main(int argc, char* argv[])
         //        printf("<<task load ender end, thds: %d\n",
         //        omp_get_thread_num());
       }
-      done_end_blk++;
-      printf("<<<<<<\n");
+      // done_end_blk++;
     }
+    printf("\n");
   } // end of ix loop
   // load target
   fclose(fp);
