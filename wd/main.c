@@ -1,10 +1,9 @@
 #include "helper.h"
 
-size_t counting[3465] = { 0 };
-
 int
 main(int argc, char* argv[])
 {
+  size_t counting[3465] = { 0 };
   char* ptr = strchr(argv[1], 't');
   int n_threads = 1;
   if (ptr) {
@@ -12,7 +11,6 @@ main(int argc, char* argv[])
   }
   omp_set_num_threads(n_threads);
   FILE* fp;
-  char lines[24];
   fp = fopen("cell", "r");
   fseek(fp, 0L, SEEK_END);
   long res = ftell(fp);
@@ -23,13 +21,14 @@ main(int argc, char* argv[])
   // printf("lines %ld\n",total_lines);
 
   double header_pnt[3];
+  double end_pnt[3];
   size_t current_pnt = 0;
   size_t done_end_blk;
 
   //[x] [] [] [] []
-  for (size_t ix = 0; ix < total_lines; ix++) {
+  for (size_t ix = 0; ix < total_lines - 1; ix++) {
     // printf(">>task load starter start, thds: %d\n", omp_get_thread_num());
-
+    char lines[24];
     fseek(fp, ix * 24 * sizeof(char), SEEK_SET);
     if (fread(lines, sizeof(char), sizeof(lines), fp) == sizeof(lines)) {
       // puts(lines);
@@ -44,13 +43,13 @@ main(int argc, char* argv[])
         nums[6] = '\0';
         int number = naive_str2l(nums);
         header_pnt[jx] = (double)number / 1000.0;
-        // printf("%4.4f\n", header_pnt[jx]);
+        // printf("%s\n", nums);
       }
       current_pnt = ix + 1;
       done_end_blk = 0;
     }
 
-    // printf("current start point: %ld\n", current_pnt);
+    printf("start line: %ld\n", current_pnt - 1);
 
     // printf("<<task load starter end, thds: %d\n\n", omp_get_thread_num());
     // compute how many blocks need
@@ -62,54 +61,52 @@ main(int argc, char* argv[])
       blks_need = left_lines / max_load_lines;
     }
     // printf("need blocks: %ld\n", blks_need);
-// #pragma omp parallel
-// #pragma omp single
-// #pragma omp taskloop grainsize(2)
+    // #pragma omp parallel
+    // #pragma omp single
+    // #pragma omp taskloop grainsize(2)
     for (size_t iblk = 0; iblk < blks_need; iblk++) {
-      //#pragma omp criticle
-      printf(">>task load ender start, thds: %d\n", omp_get_thread_num());
-      size_t ixb;
-#pragma omp taskloop private(ixb) reduction(+ : counting[:3465])
+      printf(">>>>>>\n");
+      size_t ixb = current_pnt + iblk * max_load_lines;
+#pragma omp parallel for firstprivate(ixb) private(end_pnt) shared(header_pnt) reduction(+ : counting[:3465])
       for (size_t ixc = 0; ixc < max_load_lines; ixc++) {
-        ixb = current_pnt + iblk * max_load_lines + ixc;
-        double end_pnt[3] = { 0.0 };
-        fseek(fp, ixb * 24 * sizeof(char), SEEK_SET);
-        if (fread(lines, sizeof(char), sizeof(lines), fp) == sizeof(lines)) {
+        // printf("task load ender start, thds: %d\n", omp_get_thread_num());
+        char par_line[24];
+        fseek(fp, (ixb + ixc) * 24 * sizeof(char), SEEK_SET);
+        if (fread(par_line, 1, 24, fp) == 24) {
+          printf("current line: %ld\n", ixb + ixc);
           for (size_t jx = 0; jx < 3; jx++) {
             char nums[7];
-            nums[0] = lines[8 * jx + 0];
-            nums[1] = lines[8 * jx + 1];
-            nums[2] = lines[8 * jx + 2];
-            nums[3] = lines[8 * jx + 4];
-            nums[4] = lines[8 * jx + 5];
-            nums[5] = lines[8 * jx + 6];
+            nums[0] = par_line[8 * jx + 0];
+            nums[1] = par_line[8 * jx + 1];
+            nums[2] = par_line[8 * jx + 2];
+            nums[3] = par_line[8 * jx + 4];
+            nums[4] = par_line[8 * jx + 5];
+            nums[5] = par_line[8 * jx + 6];
             nums[6] = '\0';
             int number = naive_str2l(nums);
             end_pnt[jx] = (double)number / 1000.0;
-
-            // printf("%s\n", nums);
+            //#pragma omp criticle
+            //            printf("%s\n", nums);
             // printf("%4.4f\n", end_pnt[jx]);
           }
-          double start_pnt[3];
-          start_pnt[0] = header_pnt[0];
-          start_pnt[1] = header_pnt[1];
-          start_pnt[2] = header_pnt[2];
 
           double total_len_2 =
-            (start_pnt[0] - end_pnt[0]) * (start_pnt[0] - end_pnt[0]) +
-            (start_pnt[1] - end_pnt[1]) * (start_pnt[1] - end_pnt[1]) +
-            (start_pnt[2] - end_pnt[2]) * (start_pnt[2] - end_pnt[2]);
+            (header_pnt[0] - end_pnt[0]) * (header_pnt[0] - end_pnt[0]) +
+            (header_pnt[1] - end_pnt[1]) * (header_pnt[1] - end_pnt[1]) +
+            (header_pnt[2] - end_pnt[2]) * (header_pnt[2] - end_pnt[2]);
 
           size_t total_len_rnd = (size_t)(sqrt(total_len_2) * 100.0 + 0.5);
           counting[total_len_rnd] += 1;
+          printf("counting: %ld\n", counting[total_len_rnd]);
         }
+        //#pragma omp criticle
+        //        printf("done_end_blk: %ld\n", done_end_blk);
+        //#pragma omp criticle
+        //        printf("<<task load ender end, thds: %d\n",
+        //        omp_get_thread_num());
       }
       done_end_blk++;
-      // #pragma omp criticle
-      //       printf("done_end_blk: %ld\n", done_end_blk);
-      // #pragma omp criticle
-      //       printf("<<task load ender end, thds: %d\n\n",
-      //       omp_get_thread_num());
+      printf("<<<<<<\n");
     }
   } // end of ix loop
   // load target
