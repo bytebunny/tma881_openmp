@@ -11,12 +11,13 @@
 #define _H_NEWTON
 typedef struct
 {
-  double* pnts;
+  double** pnts;
   size_t len;
 } cell;
 
 int
 naive_str2l(const char*);
 
-void cell_distances(cell);
+void
+cell_distances(cell, double[]);
 #endif
