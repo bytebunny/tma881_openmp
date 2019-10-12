@@ -10,7 +10,7 @@ main(int argc, char* argv[])
     n_threads = strtol(++ptr, NULL, 10);
   }
   omp_set_num_threads(n_threads);
-  char filnam[] = "cell";
+  char filnam[] = "cell_50";
   FILE* fp;
   fp = fopen(filnam, "r");
   fseek(fp, 0L, SEEK_END);
@@ -18,7 +18,7 @@ main(int argc, char* argv[])
   fseek(fp, 0L, SEEK_SET);
   // fclose(fp);
   size_t total_lines = res / 24;
-  size_t max_load_lines = 100;
+  size_t max_load_lines = 10;
   // printf("lines %ld\n",total_lines);
 
   //[x] [] [] [] []
@@ -44,12 +44,12 @@ main(int argc, char* argv[])
       // done_end_blk = 0;
     }
 
-    printf("\033[0;35m");
-    printf("start line: %ld\n", ix);
-    printf("\033[0m");
-    printf("\033[0;36m");
-    printf("------------\n");
-    printf("\033[0m");
+    // printf("\033[0;35m");
+    // printf("start line: %ld\n", ix);
+    // printf("\033[0m");
+    // printf("\033[0;36m");
+    // printf("------------\n");
+    // printf("\033[0m");
 
     // printf("<<task load starter end, thds: %d\n\n", omp_get_thread_num());
     size_t now_read = ix + 1;
@@ -62,25 +62,24 @@ main(int argc, char* argv[])
       blks_need = left_lines / max_load_lines;
     }
     // compute how many lines need to load inside a block
-    size_t blk_list[blks_need], remain_left_lines = left_lines;
+    size_t blk_list[blks_need];
     for (size_t ix = 0; ix < blks_need; ix++) {
-      if (remain_left_lines >= max_load_lines) {
+      if (left_lines >= max_load_lines) {
         blk_list[ix] = max_load_lines;
-        remain_left_lines -= max_load_lines;
+        left_lines -= max_load_lines;
       } else {
-        blk_list[ix] = remain_left_lines;
+        blk_list[ix] = left_lines;
       }
     }
 
-    // printf("need blocks: %ld\n", blks_need);
     for (size_t iblk = 0; iblk < blks_need; iblk++) {
       size_t line_offset = now_read + iblk * max_load_lines;
       size_t curr_max_load = blk_list[iblk];
       double* block_pnts_list =
         (double*)aligned_alloc(64, sizeof(double) * curr_max_load * 3);
       double** block_pnts =
-        (double**)aligned_alloc(64, sizeof(double*) * total_lines);
-      for (size_t ix = 0; ix < total_lines; ix++) {
+        (double**)aligned_alloc(64, sizeof(double*) * curr_max_load);
+      for (size_t ix = 0; ix < curr_max_load; ix++) {
         block_pnts[ix] = block_pnts_list + ix * 3;
       }
 
@@ -89,13 +88,13 @@ main(int argc, char* argv[])
         char par_line[24];
         size_t read_line_num = line_offset + ixc;
         // FILE* fl = fopen(filnam, "r");
-        fseek(fp, read_line_num * 24 * sizeof(char), SEEK_SET);
+        fseek(fp, read_line_num * 24L, SEEK_SET);
         fread(par_line, 1, 24, fp);
         // if (fread(par_line, 1, 24, fp) == 24) {
-        printf("\033[0;32m");
-        printf(
-          "reading line: %ld, thd: %d\n", read_line_num, omp_get_thread_num());
-        printf("\033[0m");
+        // printf("\033[0;32m");
+        // printf(
+        //   "reading line: %ld, thd: %d\n", read_line_num, omp_get_thread_num());
+        // printf("\033[0m");
         for (size_t jx = 0; jx < 3; jx++) {
           char nums[7];
           nums[0] = par_line[8 * jx + 0];
@@ -111,7 +110,7 @@ main(int argc, char* argv[])
           //            printf("%s\n", nums);
           // printf("%4.4f\n", end_pnt[jx]);
         }
-        //}
+        //} if end
         // fclose(fl);
       }
       cell points;
@@ -120,14 +119,12 @@ main(int argc, char* argv[])
       cell_distances(points, header_pnt);
       free(block_pnts_list);
       free(block_pnts);
-      printf("\033[0;34m");
-      printf("------------\n");
-      printf("\033[0m");
-      // done_end_blk++;
+      // printf("\033[0;34m");
+      // printf("------------\n");
+      // printf("\033[0m");
     } // block loop
-    printf("\n");
+    // printf("\n");
   } // end of ix loop
-  // load target
   fclose(fp);
 
   for (size_t ixb = 0; ixb < 3465; ixb++) {
