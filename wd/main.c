@@ -28,7 +28,6 @@ main(int argc, char* argv[])
 
   //[x] [] [] [] []
   for (size_t ix = 0; ix < total_lines; ix++) {
-#pragma omp criticle
     printf(">>task load starter start, thds: %d\n", omp_get_thread_num());
 
     fseek(fp, ix * 24 * sizeof(char), SEEK_SET);
@@ -51,10 +50,8 @@ main(int argc, char* argv[])
       done_end_blk = 0;
     }
 
-#pragma omp criticle
     printf("current start point: %ld\n", current_pnt);
 
-#pragma omp criticle
     printf("<<task load starter end, thds: %d\n\n", omp_get_thread_num());
     // compute how many blocks need
     size_t blks_need;
@@ -64,18 +61,15 @@ main(int argc, char* argv[])
     } else {
       blks_need = left_lines / max_load_lines;
     }
-#pragma omp criticle
-      printf("need blocks: %ld\n", blks_need);
-
+    printf("need blocks: %ld\n", blks_need);
+#pragma omp parallel for ordered reduction(+ : counting[:]) 
     for (size_t iblk = 0; iblk < blks_need; iblk++) {
-#pragma omp criticle
+#pragma omp ordered
       printf(">>task load ender start, thds: %d\n", omp_get_thread_num());
-      for (size_t ixc = 0, ixb = current_pnt + iblk * max_load_lines;
-           ixc < max_load_lines && ixb < total_lines;
-           ixc++, ixb++) {
+      size_t ixb;
+      for (size_t ixc = 0; ixc < max_load_lines; ixc++) {
+        ixb = current_pnt + iblk * max_load_lines + ixc;
         double end_pnt[3] = { 0.0 };
-#pragma omp critical
-        printf("done_end_blk: %ld\n", done_end_blk);
         fseek(fp, ixb * 24 * sizeof(char), SEEK_SET);
         if (fread(lines, sizeof(char), sizeof(lines), fp) == sizeof(lines)) {
           for (size_t jx = 0; jx < 3; jx++) {
@@ -108,10 +102,11 @@ main(int argc, char* argv[])
         }
       }
       done_end_blk++;
-#pragma omp critical
+#pragma omp ordered
+      printf("done_end_blk: %ld\n", done_end_blk);
+#pragma omp ordered
       printf("<<task load ender end, thds: %d\n\n", omp_get_thread_num());
     }
-#pragma omp taskwait
   } // end of ix loop
   // load target
   fclose(fp);
