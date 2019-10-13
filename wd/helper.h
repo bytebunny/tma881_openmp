@@ -13,11 +13,12 @@ typedef struct
 {
   double** pnts;
   size_t len;
-} cell;
+} cells;
 
 int
 naive_str2l(const char*);
 
-void
-cell_distances(cell, double[]);
+void cell_distances(cells);
+void cell_distance(cells, double []);
+
 #endif
