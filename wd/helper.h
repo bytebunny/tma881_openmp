@@ -19,6 +19,7 @@ int
 naive_str2l(const char*);
 
 void cell_distances(cells);
-void cell_distance(cells, double []);
+void
+cell_distance(cells, cells);
 
 #endif

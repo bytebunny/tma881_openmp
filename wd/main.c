@@ -10,7 +10,7 @@ main(int argc, char* argv[])
     n_threads = strtol(++ptr, NULL, 10);
   }
   omp_set_num_threads(n_threads);
-  char filnam[] = "cell_50";
+  char filnam[] = "cell_e4";
   FILE* fp;
   fp = fopen(filnam, "r");
   fseek(fp, 0L, SEEK_END);
@@ -91,13 +91,25 @@ main(int argc, char* argv[])
         // printf("previous blk %ld\n",ix);
         size_t previous_blk_start = blk_start[ix];
         size_t previous_blk_lines = blk_list[ix];
-        double previous_header[3];
+        double* previous_header_list =
+          (double*)aligned_alloc(64, sizeof(double) * previous_blk_lines * 3);
+        double** previous_header =
+          (double**)aligned_alloc(64, sizeof(double*) * previous_blk_lines);
+        for (size_t ix = 0; ix < previous_blk_lines; ix++) {
+          previous_header[ix] = previous_header_list + ix * 3;
+        }
         fseek(fp, previous_blk_start * 24L, SEEK_SET);
         // printf("pre file at %ld\n", ftell(fp));
         // printf("pre load lines: %ld\n", previous_blk_lines);
         for (size_t ixc = 0; ixc < previous_blk_lines; ixc++) {
           char par_line[24];
           fgets(par_line, 25, fp);
+          // #pragma omp critical
+          //           {
+          //             printf("\033[0;34m");
+          //             printf("ordered thd num: %d\n", omp_get_thread_num());
+          //             printf("\033[0m");
+          //           }
           for (size_t jx = 0; jx < 3; jx++) {
             char nums[7];
             nums[0] = par_line[8 * jx + 0];
@@ -108,11 +120,16 @@ main(int argc, char* argv[])
             nums[5] = par_line[8 * jx + 6];
             nums[6] = '\0';
             int number = naive_str2l(nums);
-            previous_header[jx] = (double)number / 1000.0;
+            previous_header[ixc][jx] = (double)number / 1000.0;
             // printf("%s\n", nums);
           }
-          cell_distance(points, previous_header);
         }
+        cells headers;
+        headers.len = previous_blk_lines;
+        headers.pnts = previous_header;
+        cell_distance(points, headers);
+        free(previous_header_list);
+        free(previous_header);
       }
     }
     free(block_pnts_list);
@@ -155,8 +172,6 @@ cell_distances(cells points)
   extern size_t counting[];
   size_t rows = points.len;
   double** cells_loc = points.pnts;
-#pragma omp parallel
-#pragma omp single
 #pragma omp taskloop reduction(+ : counting[:3465])
   for (size_t ix = 0; ix < rows - 1; ix++) {
     double header[3];
@@ -175,21 +190,26 @@ cell_distances(cells points)
   }
 }
 void
-cell_distance(cells points, double header[3])
+cell_distance(cells points, cells headers)
 {
   extern size_t counting[];
   size_t rows = points.len;
   double** cells_loc = points.pnts;
-#pragma omp parallel
-#pragma omp single
-#pragma omp taskloop reduction(+ : counting[:3465])
-  for (size_t jx = 0; jx < rows; jx++) {
-    double total_len_2 =
-      (header[0] - cells_loc[jx][0]) * (header[0] - cells_loc[jx][0]) +
-      (header[1] - cells_loc[jx][1]) * (header[1] - cells_loc[jx][1]) +
-      (header[2] - cells_loc[jx][2]) * (header[2] - cells_loc[jx][2]);
+  size_t header_rows = headers.len;
+  double** header_loc = headers.pnts;
 
-    size_t total_len_rnd = (size_t)(sqrt(total_len_2) * 100.0 + 0.5);
-    counting[total_len_rnd] += 1;
+#pragma omp taskloop collapse(2) reduction(+ : counting[:3465])
+  for (size_t ix = 0; ix < header_rows; ix++) {
+    for (size_t jx = 0; jx < rows; jx++) {
+      double total_len_2 = (header_loc[ix][0] - cells_loc[jx][0]) *
+                             (header_loc[ix][0] - cells_loc[jx][0]) +
+                           (header_loc[ix][1] - cells_loc[jx][1]) *
+                             (header_loc[ix][1] - cells_loc[jx][1]) +
+                           (header_loc[ix][2] - cells_loc[jx][2]) *
+                             (header_loc[ix][2] - cells_loc[jx][2]);
+
+      size_t total_len_rnd = (size_t)(sqrt(total_len_2) * 100.0 + 0.5);
+      counting[total_len_rnd] += 1;
+    }
   }
 }
