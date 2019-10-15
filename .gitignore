@@ -7,7 +7,7 @@
 !*.h
 !*.s
 !*.sh
-!makefile
+!Makefile
 !*.gitignore
 !*.py
 !*.png

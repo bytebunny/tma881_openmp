@@ -4,7 +4,7 @@ LIBS := -lpthread -lgomp
 
 OBJS := cell_distances.o 
 
-.PHONY: all clean
+.PHONY: all test clean
 all: cell_distances 
 
 # Rule to generate object files:
@@ -13,5 +13,8 @@ cell_distances: $(OBJS)
 
 $(OBJS) : helper.h
 
+test:
+	tar -czvf cell_distances.tar.gz cell_distances.c helper.h Makefile
+	./check_submission.py cell_distances.tar.gz
 clean:
-	-rm -f *.o cell_distances
+	rm -rvf *.o cell_distances distances/ extracted/ cell_distances.tar.gz
