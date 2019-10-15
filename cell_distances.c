@@ -39,9 +39,9 @@ main(int argc, char* argv[])
 
   for (size_t iblk = 0; iblk < blks_need; iblk++) {
     size_t curr_max_load = blk_list[iblk];
-    int* block_pnts_list =
-      (int*)aligned_alloc(64, sizeof(int) * curr_max_load * 3);
-    int** block_pnts = (int**)aligned_alloc(64, sizeof(int*) * curr_max_load);
+    short* block_pnts_list =
+      (short*)aligned_alloc(64, sizeof(short) * curr_max_load * 3);
+    short** block_pnts = (short**)aligned_alloc(64, sizeof(short*) * curr_max_load);
     for (size_t ix = 0; ix < curr_max_load; ix++) {
       block_pnts[ix] = block_pnts_list + ix * 3;
     }
@@ -73,7 +73,7 @@ main(int argc, char* argv[])
       for (size_t ix = 0; ix < previous_blks_nums; ix++) {
         size_t previous_blk_start = blk_start[ix];
         size_t previous_blk_lines = blk_list[ix];
-        int previous_header[3];
+        short previous_header[3];
         fseek(fp, previous_blk_start * 24L, SEEK_SET);
         for (size_t ixc = 0; ixc < previous_blk_lines; ixc++) {
           char par_line[25];
@@ -87,7 +87,7 @@ main(int argc, char* argv[])
             nums[4] = par_line[8 * jx + 5];
             nums[5] = par_line[8 * jx + 6];
             nums[6] = '\0';
-            int number = naive_str2l(nums);
+            short number = naive_str2l(nums);
             previous_header[jx] = number;
           }
           cell_distance(points, previous_header);
@@ -104,11 +104,11 @@ main(int argc, char* argv[])
   }
 }
 
-int
+short
 naive_str2l(const char* p)
 {
-  int x = 0;
-  int neg = 0;
+  short x = 0;
+  short neg = 0;
   if (*p == '-') {
     neg = 1;
   }
@@ -128,12 +128,12 @@ cell_distances(cells points)
 {
   extern size_t counting[];
   size_t rows = points.len;
-  int** cells_loc = points.pnts;
+  short** cells_loc = points.pnts;
 #pragma omp parallel
 #pragma omp single
 #pragma omp taskloop reduction(+ : counting[:3465])
   for (size_t ix = 0; ix < rows - 1; ix++) {
-    int header[3];
+    short header[3];
     header[0] = cells_loc[ix][0];
     header[1] = cells_loc[ix][1];
     header[2] = cells_loc[ix][2];
@@ -143,18 +143,17 @@ cell_distances(cells points)
         (header[1] - cells_loc[jx][1]) * (header[1] - cells_loc[jx][1]) +
         (header[2] - cells_loc[jx][2]) * (header[2] - cells_loc[jx][2]);
 
-      // int total_len_rnd = (int)((sqrt(total_len_2) * 100.0) + 0.5);
-      int total_len_rnd = (int)(sqrtf(total_len_2) / 10 + 0.5);
+      short total_len_rnd = (short)(sqrtf(total_len_2) / 10 + 0.5);
       counting[total_len_rnd] += 1;
     }
   }
 }
 void
-cell_distance(cells points, int header[3])
+cell_distance(cells points, short header[3])
 {
   extern size_t counting[];
   size_t rows = points.len;
-  int** cells_loc = points.pnts;
+  short** cells_loc = points.pnts;
 #pragma omp parallel
 #pragma omp single
 #pragma omp taskloop reduction(+ : counting[:3465])
@@ -164,7 +163,7 @@ cell_distance(cells points, int header[3])
       (header[1] - cells_loc[jx][1]) * (header[1] - cells_loc[jx][1]) +
       (header[2] - cells_loc[jx][2]) * (header[2] - cells_loc[jx][2]);
 
-    int total_len_rnd = (int)(sqrtf(total_len_2) / 10 + 0.5);
+    short total_len_rnd = (short)(sqrtf(total_len_2) / 10 + 0.5);
     counting[total_len_rnd] += 1;
   }
 }
