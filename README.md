@@ -42,27 +42,28 @@ Next, the corresponding indices in the frequency array were obtained from
 
 **index = (short) (distance/10 + 0.5)**
 
-Note that division by `10` is performed to retain only 4 significant digits (present in number `3465`) and `0.5` was added to round up to the nearest integer instead of the largest integer not larger than `distance`. Then, the counter of the corresponding element in the frequency array was incremented:
+Note that division by `10` is performed to retain only 4 significant digits (present in number `3465`) and `0.5` was added to round up to the nearest integer instead of the largest integer not larger than `distance`. Then, the counter of the corresponding element in the array of counts was incremented:
 
-**++freqArray[ index ]**
+**++counting[ index ]**
 
 
 #### Parallelisation
 
-Looping over cells was performed in parallel by means of the `parallel for` pragma presented in the lecture. Since distances are symmetric, the computations involved the triangular part of the matrix illustrated below.
+Looping over cells was performed in parallel by means of the `parallel for` pragma presented in the lecture. Parallelization was performed on the outer loop in light of the memory access patterns discussed during the lectures. Since distances are symmetric, the computations involved the triangular part of the matrix illustrated below.
 
 ![distance_matrix](./figures/distance_illustration.png)
 
 Here, indices `I` and `J` denote cells (up to `N` cells) between which the distance is computed. Therefore, the matrix traversal is performed by means of two nested loops:
 ```
+#pragma omp parallel for ...
 for ( I = 0; I < N; ++I ){
     for ( J = 0; J < N; ++J ){
         // compute distance.
         // compute index.
-        // increment count: ++freqArray[ index ]
+        // increment count: ++counting[ index ]
     }
 }
 ```
-The **private** variables are `I, J`, `distance` and `index`. The **shared** variables are the number of points `N` and the array of frequencies `freqArray`, to which the reduction is done via `+:freqArray[:3465]`.
+The **private** variables are `I, J`, `distance` and `index`. The **shared** variables are the number of points `N` and the array of counts `counting`, to which the reduction is done via `+:counting[:3465]`.
 
-Lastly, no sorting is necessary for printing, as the elements of `freqArray` already represent distances in ascending order.
+Lastly, no sorting is necessary for printing, as the elements of `counting` already represent distances in ascending order.

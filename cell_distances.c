@@ -129,21 +129,24 @@ cell_distances(cells points)
   extern size_t counting[];
   size_t rows = points.len;
   short** cells_loc = points.pnts;
-#pragma omp parallel
-#pragma omp single
-#pragma omp taskloop reduction(+ : counting[:3465])
-  for (size_t ix = 0; ix < rows - 1; ix++) {
-    short header[3];
+  
+  size_t ix, jx;
+  short header[3], total_len_rnd;
+  int total_len_2;
+  #pragma omp parallel for \
+    default(none) private(ix, jx, header, total_len_2, total_len_rnd) \
+    shared(rows, cells_loc) reduction(+:counting[:3465])
+  for ( ix = 0; ix < rows - 1; ix++) {
     header[0] = cells_loc[ix][0];
     header[1] = cells_loc[ix][1];
     header[2] = cells_loc[ix][2];
-    for (size_t jx = ix + 1; jx < rows; jx++) {
-      int total_len_2 =
+    for ( jx = ix + 1; jx < rows; jx++) {
+      total_len_2 =
         (header[0] - cells_loc[jx][0]) * (header[0] - cells_loc[jx][0]) +
         (header[1] - cells_loc[jx][1]) * (header[1] - cells_loc[jx][1]) +
         (header[2] - cells_loc[jx][2]) * (header[2] - cells_loc[jx][2]);
 
-      short total_len_rnd = (short)(sqrtf(total_len_2) / 10 + 0.5);
+      total_len_rnd = (short)(sqrtf(total_len_2) / 10 + 0.5);
       counting[total_len_rnd] += 1;
     }
   }
@@ -154,16 +157,20 @@ cell_distance(cells points, short header[3])
   extern size_t counting[];
   size_t rows = points.len;
   short** cells_loc = points.pnts;
-#pragma omp parallel
-#pragma omp single
-#pragma omp taskloop reduction(+ : counting[:3465])
-  for (size_t jx = 0; jx < rows; jx++) {
-    int total_len_2 =
+
+  size_t jx;
+  int total_len_2;
+  short total_len_rnd;
+  #pragma omp parallel for \
+    default(none) private(jx, total_len_2, total_len_rnd) \
+    shared(rows, cells_loc, header) reduction(+:counting[:3465])
+  for ( jx = 0; jx < rows; jx++) {
+    total_len_2 =
       (header[0] - cells_loc[jx][0]) * (header[0] - cells_loc[jx][0]) +
       (header[1] - cells_loc[jx][1]) * (header[1] - cells_loc[jx][1]) +
       (header[2] - cells_loc[jx][2]) * (header[2] - cells_loc[jx][2]);
 
-    short total_len_rnd = (short)(sqrtf(total_len_2) / 10 + 0.5);
+    total_len_rnd = (short)(sqrtf(total_len_2) / 10 + 0.5);
     counting[total_len_rnd] += 1;
   }
 }
