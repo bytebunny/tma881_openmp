@@ -35,7 +35,7 @@ The program cannot access more than 1 GiBi of memory; in other words, a maximum 
 
 When the program starts, it loads the first block of cells. It can contain either `max_load_lines` or `n` cells, and the program computes the distances between the cells in that block. After that, the program will try to load the next block. If there are no more blocks, the program will free the memory and finish. If there are more blocks, the program will free the memory and load the next block, subsequently computing the distances between the cells within this block. Now, the program will not free the memory of this block of cells. Rather, it will look up the cells in the previous block(s), load those cells sequentially, and compute the distances between the loaded cells and the cells within the current block. 
 
-For example, if we cells `6` to `10` are loaded in the current block, the program will look up cells in the previous block that containng cells `1` to `5`. First, the program picks cell `1` and computes the distances between it and cells `6` to `10`. After that, it picks up cell `2` and computes the distances between it and cells `6` to `10`. The program repeats this procedure for all cells in the previous block(s). After that, it finishes and frees the memory.
+For example, if cells `6` to `10` are loaded in the current block, the program will look up cells in the previous block that containng cells `1` to `5`. First, the program picks cell `1` and computes the distances between it and cells `6` to `10`. After that, it picks up cell `2` and computes the distances between it and cells `6` to `10`. The program repeats this procedure for all cells in the previous block(s). After that, it finishes and frees the memory.
 
 ### Computing distances and counts
 
